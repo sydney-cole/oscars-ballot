@@ -1,3 +1,5 @@
+"use client";
+
 type Props = {
   current: number; // 1-indexed
   total: number;
