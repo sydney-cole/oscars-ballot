@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { categories, formatNominee, TOTAL_CATEGORIES } from "@/lib/nominees";
 import { loadPicks, savePick, loadStep, saveStep, type Picks } from "@/lib/picks";
@@ -17,15 +17,23 @@ type Props = {
 export function BallotClient({ returnToSummary, startIndex }: Props) {
   const router = useRouter();
 
-  // With ssr: false in the dynamic import, this component is client-only.
-  // No hydration mismatch risk, so we can initialize state directly from localStorage.
+  const [hydrated, setHydrated] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(() => {
-    const idx = startIndex >= 0 ? startIndex : loadStep();
+    const idx = startIndex >= 0 ? startIndex : 0;
     return Math.min(idx, TOTAL_CATEGORIES - 1);
   });
-  const [picks, setPicks] = useState<Picks>(() => loadPicks());
+  const [picks, setPicks] = useState<Picks>({});
   const [animClass, setAnimClass] = useState<AnimClass>("");
   const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (startIndex < 0) {
+      const step = loadStep();
+      setCurrentIndex(Math.min(step, TOTAL_CATEGORIES - 1));
+    }
+    setPicks(loadPicks());
+    setHydrated(true);
+  }, [startIndex]);
 
   const animateTo = useCallback(
     (nextIndex: number, direction: "forward" | "back") => {
@@ -84,6 +92,14 @@ export function BallotClient({ returnToSummary, startIndex }: Props) {
     }
     animateTo(currentIndex - 1, "back");
   }, [isAnimating, currentIndex, returnToSummary, router, animateTo]);
+
+  if (!hydrated) {
+    return (
+      <div className="min-h-screen bg-oscar-black flex items-center justify-center">
+        <div className="text-oscar-gold text-lg animate-pulse">Loading ballot…</div>
+      </div>
+    );
+  }
 
   const currentCategory = categories[currentIndex];
   const currentPick = picks[currentCategory.category];
