@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0A0A0A;
+  --foreground: #F5F0E8;
 }
 
 @theme inline {
@@ -10,17 +10,48 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
+  --font-display: var(--font-playfair);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Oscar palette */
+  --color-oscar-gold:       #C9A84C;
+  --color-oscar-gold-light: #E8C97E;
+  --color-oscar-gold-dark:  #9A7A2E;
+  --color-oscar-black:      #0A0A0A;
+  --color-oscar-charcoal:   #1A1A1A;
+  --color-oscar-surface:    #242424;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans, Arial, Helvetica, sans-serif);
+}
+
+/* Slide animations for ballot transitions */
+@keyframes slideInFromRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInFromLeft {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+@keyframes slideOutToLeft {
+  from { transform: translateX(0);    opacity: 1; }
+  to   { transform: translateX(-100%); opacity: 0; }
+}
+@keyframes slideOutToRight {
+  from { transform: translateX(0);   opacity: 1; }
+  to   { transform: translateX(100%); opacity: 0; }
+}
+
+.slide-in-right  { animation: slideInFromRight  200ms ease-out forwards; }
+.slide-in-left   { animation: slideInFromLeft   200ms ease-out forwards; }
+.slide-out-left  { animation: slideOutToLeft    150ms ease-in  forwards; }
+.slide-out-right { animation: slideOutToRight   150ms ease-in  forwards; }
+
+/* Gold shimmer divider */
+.gold-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #C9A84C, transparent);
 }
