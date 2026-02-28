@@ -1,8 +1,26 @@
 "use client";
 
 import Link from "next/link";
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { Authenticated, Unauthenticated, AuthLoading, useQuery } from "convex/react";
 import { SignInButton, UserButton } from "@clerk/nextjs";
+import { api } from "@/convex/_generated/api";
+
+function BallotCTA() {
+  const ballot = useQuery(api.ballots.getMyBallot);
+  const isSubmitted = !!ballot?.submittedAt;
+
+  return (
+    <Link
+      href={isSubmitted ? "/summary" : "/ballot"}
+      className="w-full text-center rounded-full font-semibold py-4 px-10 text-base
+                 text-oscar-black transition-all duration-200
+                 hover:scale-[1.02] active:scale-[0.98]"
+      style={{ backgroundColor: "#C9A84C" }}
+    >
+      {isSubmitted ? "View Your Ballot" : "Fill Out Your Ballot"}
+    </Link>
+  );
+}
 
 export default function Home() {
   return (
@@ -67,15 +85,7 @@ export default function Home() {
         </Unauthenticated>
 
         <Authenticated>
-          <Link
-            href="/ballot"
-            className="w-full text-center rounded-full font-semibold py-4 px-10 text-base
-                       text-oscar-black transition-all duration-200
-                       hover:scale-[1.02] active:scale-[0.98]"
-            style={{ backgroundColor: "#C9A84C" }}
-          >
-            Fill Out Your Ballot
-          </Link>
+          <BallotCTA />
         </Authenticated>
 
         <Link
