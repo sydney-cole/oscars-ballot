@@ -28,3 +28,25 @@ export const setWinners = mutation({
     }
   },
 });
+
+/** Sets a single category's winner. Merges into the existing picks record. */
+export const setWinner = mutation({
+  args: {
+    category: v.string(),
+    pickKey: v.string(),
+  },
+  handler: async (ctx, { category, pickKey }) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity || !ADMIN_USER_IDS.includes(identity.subject)) {
+      throw new Error("Unauthorized");
+    }
+    const existing = await ctx.db.query("winners").first();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        picks: { ...existing.picks, [category]: pickKey },
+      });
+    } else {
+      await ctx.db.insert("winners", { picks: { [category]: pickKey } });
+    }
+  },
+});
