@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
+import { useUser, SignInButton } from "@clerk/nextjs";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
 type Mode = "join" | "create";
 
 export function GroupPanel() {
+  const { isSignedIn, isLoaded } = useUser();
   const [mode, setMode] = useState<Mode>("join");
 
   // ── Create state ──────────────────────────────────────────────────────────
@@ -75,7 +77,22 @@ export function GroupPanel() {
         Groups
       </h2>
 
+      {/* Sign-in gate */}
+      {isLoaded && !isSignedIn && (
+        <div className="text-center py-4">
+          <p className="text-zinc-400 text-sm mb-4">
+            Sign in to create or join a group.
+          </p>
+          <SignInButton mode="modal">
+            <button className="btn-gold" style={{ width: "auto", padding: "0.6rem 2rem" }}>
+              Sign In
+            </button>
+          </SignInButton>
+        </div>
+      )}
+
       {/* Mode toggle */}
+      {isSignedIn && (<>
       <div className="flex gap-2 mb-6">
         {(["join", "create"] as const).map((m) => (
           <button
@@ -194,6 +211,7 @@ export function GroupPanel() {
           )}
         </div>
       )}
+      </>)}
     </div>
   );
 }

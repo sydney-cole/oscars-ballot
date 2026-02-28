@@ -1,11 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { categories, formatNominee, TOTAL_CATEGORIES } from "@/lib/nominees";
-import { loadStep, saveStep } from "@/lib/picks";
 import { ProgressBar } from "@/components/ProgressBar";
 import { CategoryCard } from "@/components/CategoryCard";
 
@@ -21,19 +20,26 @@ export function BallotClient({ returnToSummary, startIndex }: Props) {
   const ballot = useQuery(api.ballots.getMyBallot);
   const savePickMutation = useMutation(api.ballots.savePick);
 
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    const idx = startIndex >= 0 ? startIndex : 0;
-    return Math.min(idx, TOTAL_CATEGORIES - 1);
-  });
+  const [currentIndex, setCurrentIndex] = useState(startIndex >= 0 ? Math.min(startIndex, TOTAL_CATEGORIES - 1) : 0);
   const [animClass, setAnimClass] = useState<AnimClass>("");
   const [isAnimating, setIsAnimating] = useState(false);
+  const initialized = useRef(false);
 
+  // Once the ballot loads, resume from the first unanswered category.
+  // This replaces localStorage so a new user always starts at question 1.
   useEffect(() => {
-    if (startIndex < 0) {
-      const step = loadStep();
-      setCurrentIndex(Math.min(step, TOTAL_CATEGORIES - 1));
+    if (startIndex >= 0) return; // explicit navigation via URL param — don't override
+    if (ballot === undefined) return; // still loading
+    if (initialized.current) return; // already set for this session
+    initialized.current = true;
+
+    if (!ballot || Object.keys(ballot.picks).length === 0) {
+      setCurrentIndex(0);
+    } else {
+      const firstUnpicked = categories.findIndex((c) => !ballot.picks[c.category]);
+      setCurrentIndex(firstUnpicked >= 0 ? firstUnpicked : TOTAL_CATEGORIES - 1);
     }
-  }, [startIndex]);
+  }, [startIndex, ballot]);
 
   // Redirect to summary if ballot is already submitted
   useEffect(() => {
@@ -56,7 +62,6 @@ export function BallotClient({ returnToSummary, startIndex }: Props) {
 
       setTimeout(() => {
         setCurrentIndex(nextIndex);
-        saveStep(nextIndex);
         setAnimClass(inClass);
         setTimeout(() => {
           setAnimClass("");
