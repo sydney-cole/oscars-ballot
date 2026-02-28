@@ -46,7 +46,7 @@ export default function Home() {
           className="text-5xl sm:text-6xl md:text-7xl font-bold text-zinc-100 leading-tight"
           style={{ fontFamily: "var(--font-playfair)" }}
         >
-          Oscar Ballot
+          Oscars Ballot
         </h1>
         <p
           className="mt-3 text-2xl sm:text-3xl font-medium"
