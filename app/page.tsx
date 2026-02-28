@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
+import { SignInButton, UserButton } from "@clerk/nextjs";
 
 export default function Home() {
   return (
@@ -43,15 +47,36 @@ export default function Home() {
 
       {/* CTA buttons */}
       <div className="mt-12 flex flex-col items-center gap-4 z-10 w-full max-w-xs">
-        <Link
-          href="/ballot"
-          className="w-full text-center rounded-full font-semibold py-4 px-10 text-base
-                     text-oscar-black transition-all duration-200
-                     hover:scale-[1.02] active:scale-[0.98]"
-          style={{ backgroundColor: "#C9A84C" }}
-        >
-          Fill Out Your Ballot
-        </Link>
+        <AuthLoading>
+          <div className="w-full text-center py-4 text-zinc-500 text-sm animate-pulse">
+            Loading…
+          </div>
+        </AuthLoading>
+
+        <Unauthenticated>
+          <SignInButton mode="modal">
+            <button
+              className="w-full text-center rounded-full font-semibold py-4 px-10 text-base
+                         text-oscar-black transition-all duration-200
+                         hover:scale-[1.02] active:scale-[0.98]"
+              style={{ backgroundColor: "#C9A84C" }}
+            >
+              Sign In to Vote
+            </button>
+          </SignInButton>
+        </Unauthenticated>
+
+        <Authenticated>
+          <Link
+            href="/ballot"
+            className="w-full text-center rounded-full font-semibold py-4 px-10 text-base
+                       text-oscar-black transition-all duration-200
+                       hover:scale-[1.02] active:scale-[0.98]"
+            style={{ backgroundColor: "#C9A84C" }}
+          >
+            Fill Out Your Ballot
+          </Link>
+        </Authenticated>
 
         <Link
           href="/leaderboard"
@@ -61,6 +86,10 @@ export default function Home() {
         >
           View Leaderboard
         </Link>
+
+        <Authenticated>
+          <UserButton />
+        </Authenticated>
       </div>
 
       {/* Footer */}

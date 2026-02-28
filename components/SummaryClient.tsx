@@ -1,47 +1,31 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation } from "convex/react";
+import { useUser } from "@clerk/nextjs";
+import { api } from "@/convex/_generated/api";
 import { categories, formatNominee } from "@/lib/nominees";
-import { loadPicks, loadName, saveName, clearBallot, type Picks } from "@/lib/picks";
 
 export function SummaryClient() {
   const router = useRouter();
-  const [hydrated, setHydrated] = useState(false);
-  const [picks, setPicks] = useState<Picks>({});
-  const [name, setName] = useState("");
+  const { user } = useUser();
+  const ballot = useQuery(api.ballots.getMyBallot);
+  const submitBallotMutation = useMutation(api.ballots.submitBallot);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    setPicks(loadPicks());
-    setName(loadName());
-    setHydrated(true);
-  }, []);
-
-  const handleNameChange = (val: string) => {
-    setName(val);
-    saveName(val);
-  };
-
+  const picks = ballot?.picks ?? {};
+  const isSubmitted = !!ballot?.submittedAt;
   const totalPicked = categories.filter((c) => picks[c.category]).length;
   const totalCategories = categories.length;
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
-      setError("Please enter your name to submit.");
-      return;
-    }
     setSubmitting(true);
     setError("");
     try {
-      const res = await fetch("/api/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim(), picks }),
-      });
-      if (!res.ok) throw new Error("Submission failed");
-      clearBallot();
+      await submitBallotMutation({});
       router.push("/leaderboard");
     } catch {
       setError("Something went wrong. Please try again.");
@@ -49,7 +33,7 @@ export function SummaryClient() {
     }
   };
 
-  if (!hydrated) {
+  if (ballot === undefined) {
     return (
       <div className="min-h-screen bg-oscar-black flex items-center justify-center">
         <div className="text-oscar-gold text-lg animate-pulse">Loading your picks…</div>
@@ -75,7 +59,9 @@ export function SummaryClient() {
           Review Your Picks
         </h1>
         <p className="mt-2 text-zinc-400 text-sm">
-          {totalPicked} of {totalCategories} categories filled
+          {isSubmitted
+            ? "Your ballot has been submitted."
+            : `${totalPicked} of ${totalCategories} categories filled`}
         </p>
         <div className="gold-divider mt-4" />
       </header>
@@ -96,7 +82,6 @@ export function SummaryClient() {
                 key={cat.category}
                 className="flex items-center gap-4 rounded-xl bg-oscar-surface border border-zinc-800 px-5 py-4"
               >
-                {/* Category + pick */}
                 <div className="flex-1 min-w-0">
                   <p className="text-xs uppercase tracking-wide text-zinc-500 mb-0.5">
                     {cat.category}
@@ -113,70 +98,75 @@ export function SummaryClient() {
                   )}
                 </div>
 
-                {/* Edit button */}
-                <button
-                  onClick={() =>
-                    router.push(`/ballot?index=${index}&returnTo=summary`)
-                  }
-                  className="shrink-0 text-xs text-oscar-gold border border-oscar-gold/40 rounded-full px-3 py-1
-                             hover:bg-oscar-gold hover:text-oscar-black transition-all"
-                >
-                  Edit
-                </button>
+                {!isSubmitted && (
+                  <button
+                    onClick={() =>
+                      router.push(`/ballot?index=${index}&returnTo=summary`)
+                    }
+                    className="shrink-0 text-xs text-oscar-gold border border-oscar-gold/40 rounded-full px-3 py-1
+                               hover:bg-oscar-gold hover:text-oscar-black transition-all"
+                  >
+                    Edit
+                  </button>
+                )}
               </div>
             );
           })}
         </div>
 
-        {/* Submission form */}
-        <div className="mt-10 rounded-2xl border border-zinc-800 bg-oscar-surface p-6">
-          <h2
-            className="text-xl font-bold text-zinc-100 mb-1"
-            style={{ fontFamily: "var(--font-playfair)" }}
-          >
-            Submit Your Ballot
-          </h2>
-          <p className="text-zinc-400 text-sm mb-5">
-            Your picks will appear on the leaderboard. Once submitted, you cannot edit them.
-          </p>
-
-          <label className="block text-xs uppercase tracking-wide text-zinc-400 mb-1.5">
-            Your Name
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => handleNameChange(e.target.value)}
-            placeholder="Enter your name…"
-            className="w-full rounded-lg bg-zinc-900 border border-zinc-700 px-4 py-3 text-zinc-100
-                       placeholder-zinc-600 focus:outline-none focus:border-oscar-gold transition-colors text-sm"
-          />
-
-          {error && (
-            <p className="mt-3 text-red-400 text-sm">{error}</p>
-          )}
-
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || totalPicked === 0}
-            className="mt-4 w-full rounded-full bg-oscar-gold text-oscar-black font-semibold py-3.5 text-sm
-                       hover:bg-oscar-gold-light transition-colors
-                       disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Submitting…" : "Submit Ballot"}
-          </button>
-
-          {totalPicked < totalCategories && (
-            <p className="mt-3 text-zinc-500 text-xs text-center">
-              You have {totalCategories - totalPicked} unanswered{" "}
-              {totalCategories - totalPicked === 1 ? "category" : "categories"}.
-              You can still submit.
+        {isSubmitted ? (
+          <div className="mt-10 rounded-2xl border border-green-900/30 bg-green-950/20 p-6 text-center">
+            <p className="text-green-400 font-semibold text-lg mb-1">Ballot Submitted!</p>
+            <p className="text-zinc-400 text-sm mb-4">
+              Submitted as <span className="text-zinc-200">{ballot.userName}</span>
             </p>
-          )}
-        </div>
+            <button
+              onClick={() => router.push("/leaderboard")}
+              className="rounded-full bg-oscar-gold text-oscar-black font-semibold py-3 px-8 text-sm
+                         hover:bg-oscar-gold-light transition-colors"
+            >
+              View Leaderboard
+            </button>
+          </div>
+        ) : (
+          <div className="mt-10 rounded-2xl border border-zinc-800 bg-oscar-surface p-6">
+            <h2
+              className="text-xl font-bold text-zinc-100 mb-1"
+              style={{ fontFamily: "var(--font-playfair)" }}
+            >
+              Submit Your Ballot
+            </h2>
+            <p className="text-zinc-400 text-sm mb-5">
+              Submitting as{" "}
+              <span className="text-zinc-200">
+                {user?.fullName ?? user?.username ?? "you"}
+              </span>
+              . Once submitted, you cannot edit your picks.
+            </p>
 
-        {/* Continue ballot link */}
-        {totalPicked < totalCategories && (
+            {error && <p className="mb-3 text-red-400 text-sm">{error}</p>}
+
+            <button
+              onClick={handleSubmit}
+              disabled={submitting || totalPicked === 0}
+              className="w-full rounded-full bg-oscar-gold text-oscar-black font-semibold py-3.5 text-sm
+                         hover:bg-oscar-gold-light transition-colors
+                         disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Submitting…" : "Submit Ballot"}
+            </button>
+
+            {totalPicked < totalCategories && (
+              <p className="mt-3 text-zinc-500 text-xs text-center">
+                You have {totalCategories - totalPicked} unanswered{" "}
+                {totalCategories - totalPicked === 1 ? "category" : "categories"}.
+                You can still submit.
+              </p>
+            )}
+          </div>
+        )}
+
+        {!isSubmitted && totalPicked < totalCategories && (
           <div className="mt-4 text-center">
             <button
               onClick={() => router.push("/ballot")}

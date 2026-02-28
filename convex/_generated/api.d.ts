@@ -8,13 +8,19 @@
  * @module
  */
 
+import type * as ballots from "../ballots.js";
+import type * as winners from "../winners.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  ballots: typeof ballots;
+  winners: typeof winners;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

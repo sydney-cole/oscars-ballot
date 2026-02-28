@@ -2,8 +2,10 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { categories, formatNominee, TOTAL_CATEGORIES } from "@/lib/nominees";
-import { loadPicks, savePick, loadStep, saveStep, type Picks } from "@/lib/picks";
+import { loadStep, saveStep } from "@/lib/picks";
 import { ProgressBar } from "@/components/ProgressBar";
 import { CategoryCard } from "@/components/CategoryCard";
 
@@ -16,13 +18,13 @@ type Props = {
 
 export function BallotClient({ returnToSummary, startIndex }: Props) {
   const router = useRouter();
+  const ballot = useQuery(api.ballots.getMyBallot);
+  const savePickMutation = useMutation(api.ballots.savePick);
 
-  const [hydrated, setHydrated] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(() => {
     const idx = startIndex >= 0 ? startIndex : 0;
     return Math.min(idx, TOTAL_CATEGORIES - 1);
   });
-  const [picks, setPicks] = useState<Picks>({});
   const [animClass, setAnimClass] = useState<AnimClass>("");
   const [isAnimating, setIsAnimating] = useState(false);
 
@@ -31,9 +33,16 @@ export function BallotClient({ returnToSummary, startIndex }: Props) {
       const step = loadStep();
       setCurrentIndex(Math.min(step, TOTAL_CATEGORIES - 1));
     }
-    setPicks(loadPicks());
-    setHydrated(true);
   }, [startIndex]);
+
+  // Redirect to summary if ballot is already submitted
+  useEffect(() => {
+    if (ballot?.submittedAt) {
+      router.push("/summary");
+    }
+  }, [ballot?.submittedAt, router]);
+
+  const picks = ballot?.picks ?? {};
 
   const animateTo = useCallback(
     (nextIndex: number, direction: "forward" | "back") => {
@@ -62,8 +71,7 @@ export function BallotClient({ returnToSummary, startIndex }: Props) {
     (pickKey: string) => {
       if (isAnimating) return;
       const category = categories[currentIndex].category;
-      savePick(category, pickKey);
-      setPicks((prev) => ({ ...prev, [category]: pickKey }));
+      savePickMutation({ category, pickKey });
 
       if (returnToSummary) {
         setTimeout(() => {
@@ -81,7 +89,7 @@ export function BallotClient({ returnToSummary, startIndex }: Props) {
 
       animateTo(currentIndex + 1, "forward");
     },
-    [isAnimating, currentIndex, returnToSummary, router, animateTo]
+    [isAnimating, currentIndex, returnToSummary, router, animateTo, savePickMutation]
   );
 
   const handleBack = useCallback(() => {
@@ -93,7 +101,7 @@ export function BallotClient({ returnToSummary, startIndex }: Props) {
     animateTo(currentIndex - 1, "back");
   }, [isAnimating, currentIndex, returnToSummary, router, animateTo]);
 
-  if (!hydrated) {
+  if (ballot === undefined) {
     return (
       <div className="min-h-screen bg-oscar-black flex items-center justify-center">
         <div className="text-oscar-gold text-lg animate-pulse">Loading ballot…</div>
