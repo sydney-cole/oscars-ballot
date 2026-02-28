@@ -10,6 +10,7 @@
 
 import type * as ballots from "../ballots.js";
 import type * as groups from "../groups.js";
+import type * as settings from "../settings.js";
 import type * as winners from "../winners.js";
 
 import type {
@@ -21,6 +22,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   ballots: typeof ballots;
   groups: typeof groups;
+  settings: typeof settings;
   winners: typeof winners;
 }>;
 

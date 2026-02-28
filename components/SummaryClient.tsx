@@ -11,6 +11,7 @@ export function SummaryClient() {
   const router = useRouter();
   const { user } = useUser();
   const ballot = useQuery(api.ballots.getMyBallot);
+  const settings = useQuery(api.settings.getSettings);
   const submitBallotMutation = useMutation(api.ballots.submitBallot);
 
   const [submitting, setSubmitting] = useState(false);
@@ -18,6 +19,7 @@ export function SummaryClient() {
 
   const picks = ballot?.picks ?? {};
   const isSubmitted = !!ballot?.submittedAt;
+  const isLocked = settings?.ballotsLocked ?? false;
   const totalPicked = categories.filter((c) => picks[c.category]).length;
   const totalCategories = categories.length;
 
@@ -33,7 +35,7 @@ export function SummaryClient() {
     }
   };
 
-  if (ballot === undefined) {
+  if (ballot === undefined || settings === undefined) {
     return (
       <div className="min-h-screen bg-oscar-black flex items-center justify-center">
         <div className="text-oscar-gold text-lg animate-pulse">Loading your picks…</div>
@@ -98,7 +100,7 @@ export function SummaryClient() {
                   )}
                 </div>
 
-                {!isSubmitted && (
+                {!isSubmitted && !isLocked && (
                   <button
                     onClick={() =>
                       router.push(`/ballot?index=${index}&returnTo=summary`)
@@ -119,6 +121,20 @@ export function SummaryClient() {
             <p className="text-green-400 font-semibold text-lg mb-1">Ballot Submitted!</p>
             <p className="text-zinc-400 text-sm mb-4">
               Submitted as <span className="text-zinc-200">{ballot.userName}</span>
+            </p>
+            <button
+              onClick={() => router.push("/leaderboard")}
+              className="rounded-full bg-oscar-gold text-oscar-black font-semibold py-3 px-8 text-sm
+                         hover:bg-oscar-gold-light transition-colors"
+            >
+              View Leaderboard
+            </button>
+          </div>
+        ) : isLocked ? (
+          <div className="mt-10 rounded-2xl border border-red-900/30 bg-red-950/20 p-6 text-center">
+            <p className="text-red-400 font-semibold text-lg mb-1">🔒 Submissions Closed</p>
+            <p className="text-zinc-400 text-sm mb-4">
+              The ceremony has begun — ballot submissions are no longer accepted.
             </p>
             <button
               onClick={() => router.push("/leaderboard")}
@@ -166,7 +182,7 @@ export function SummaryClient() {
           </div>
         )}
 
-        {!isSubmitted && totalPicked < totalCategories && (
+        {!isSubmitted && !isLocked && totalPicked < totalCategories && (
           <div className="mt-4 text-center">
             <button
               onClick={() => router.push("/ballot")}

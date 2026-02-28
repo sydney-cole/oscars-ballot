@@ -48,6 +48,9 @@ export const submitBallot = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthenticated");
 
+    const settings = await ctx.db.query("settings").first();
+    if (settings?.ballotsLocked) throw new Error("Ballot submissions are closed");
+
     const existing = await ctx.db
       .query("ballots")
       .withIndex("by_user", (q) => q.eq("userId", identity.subject))

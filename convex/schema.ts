@@ -28,4 +28,8 @@ export default defineSchema({
     .index("by_group", ["groupId"])
     .index("by_user", ["userId"])
     .index("by_group_and_user", ["groupId", "userId"]),
+
+  settings: defineTable({
+    ballotsLocked: v.boolean(),
+  }),
 });

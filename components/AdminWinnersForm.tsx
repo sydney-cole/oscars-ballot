@@ -9,9 +9,12 @@ type RowStatus = "saving" | "saved" | "error";
 
 export function AdminWinnersForm() {
   const winners = useQuery(api.winners.getWinners);
+  const settings = useQuery(api.settings.getSettings);
   const setWinner = useMutation(api.winners.setWinner);
+  const setBallotsLocked = useMutation(api.settings.setBallotsLocked);
 
   const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>({});
+  const [lockLoading, setLockLoading] = useState(false);
 
   async function handleChange(category: string, pickKey: string) {
     setRowStatus((s) => ({ ...s, [category]: "saving" }));
@@ -31,7 +34,19 @@ export function AdminWinnersForm() {
     }
   }
 
-  if (winners === undefined) return null;
+  async function handleLockToggle() {
+    if (!settings) return;
+    setLockLoading(true);
+    try {
+      await setBallotsLocked({ locked: !settings.ballotsLocked });
+    } finally {
+      setLockLoading(false);
+    }
+  }
+
+  if (winners === undefined || settings === undefined) return null;
+
+  const locked = settings.ballotsLocked;
 
   return (
     <div className="mt-10 rounded-2xl border border-red-900/30 bg-red-950/20 p-6">
@@ -39,6 +54,31 @@ export function AdminWinnersForm() {
       <p className="text-zinc-500 text-sm mb-5">
         Select the winner for each category — scores update live the moment you pick.
       </p>
+
+      {/* Ballot lock toggle */}
+      <div className={`flex items-center justify-between rounded-xl px-4 py-3 mb-6 border
+        ${locked ? "border-red-700/50 bg-red-900/20" : "border-zinc-700 bg-zinc-900/40"}`}>
+        <div>
+          <p className="text-sm font-medium text-zinc-200">
+            {locked ? "🔒 Ballot submissions are closed" : "🔓 Ballot submissions are open"}
+          </p>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            {locked ? "Users can no longer submit new ballots." : "Users can still submit their ballots."}
+          </p>
+        </div>
+        <button
+          onClick={handleLockToggle}
+          disabled={lockLoading}
+          className={`ml-4 shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${locked
+              ? "bg-zinc-700 text-zinc-200 hover:bg-zinc-600"
+              : "bg-red-700 text-white hover:bg-red-600"
+            }`}
+        >
+          {lockLoading ? "…" : locked ? "Reopen" : "Lock Ballots"}
+        </button>
+      </div>
 
       <div className="space-y-4">
         {categories.map((cat) => {
