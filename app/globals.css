@@ -55,3 +55,33 @@ body {
   height: 1px;
   background: linear-gradient(to right, transparent, #C9A84C, transparent);
 }
+
+/* Shared form input style */
+.input-field {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid #3f3f46;
+  background: #18181b;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #e4e4e7;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.input-field::placeholder { color: #52525b; }
+.input-field:focus { border-color: rgba(201, 168, 76, 0.6); }
+
+/* Gold action button */
+.btn-gold {
+  width: 100%;
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: #C9A84C;
+  color: #0A0A0A;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.btn-gold:hover:not(:disabled) { opacity: 0.9; transform: scale(1.01); }
+.btn-gold:active:not(:disabled) { transform: scale(0.98); }
+.btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }

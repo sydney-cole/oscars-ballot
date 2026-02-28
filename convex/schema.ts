@@ -12,4 +12,20 @@ export default defineSchema({
   winners: defineTable({
     picks: v.record(v.string(), v.string()),
   }),
+
+  groups: defineTable({
+    name: v.string(),
+    password: v.string(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  groupMembers: defineTable({
+    groupId: v.id("groups"),
+    userId: v.string(),
+    joinedAt: v.number(),
+  })
+    .index("by_group", ["groupId"])
+    .index("by_user", ["userId"])
+    .index("by_group_and_user", ["groupId", "userId"]),
 });
