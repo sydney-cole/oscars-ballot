@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -77,6 +77,7 @@ function GroupLeaderboard({
 export function LeaderboardClient({ isAdmin }: Props) {
   const [activeTab, setActiveTab] = useState<"global" | Id<"groups">>("global");
   const [showGroupPanel, setShowGroupPanel] = useState(false);
+  const groupPanelRef = useRef<HTMLDivElement>(null);
 
   const allBallots = useQuery(api.ballots.getAllSubmitted);
   const winners = useQuery(api.winners.getWinners);
@@ -117,7 +118,15 @@ export function LeaderboardClient({ isAdmin }: Props) {
           ))}
         </div>
         <button
-          onClick={() => setShowGroupPanel((v) => !v)}
+          onClick={() => {
+            const opening = !showGroupPanel;
+            setShowGroupPanel(opening);
+            if (opening) {
+              setTimeout(() => {
+                groupPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }, 50);
+            }
+          }}
           className="shrink-0 px-3 py-1.5 rounded-full text-xs border border-zinc-700 text-zinc-400
                      hover:border-zinc-500 hover:text-zinc-200 transition-colors whitespace-nowrap"
         >
@@ -145,7 +154,7 @@ export function LeaderboardClient({ isAdmin }: Props) {
       )}
 
       {/* Group management panel */}
-      {showGroupPanel && <GroupPanel />}
+      {showGroupPanel && <div ref={groupPanelRef}><GroupPanel /></div>}
 
       {isAdmin && <AdminWinnersForm />}
     </>
