@@ -10,6 +10,11 @@ import { GroupPanel } from "@/components/GroupPanel";
 
 const TOTAL_CATEGORIES = 24;
 
+// Hardcoded ties: any pick matching one of these values counts as correct
+const TIED_CATEGORIES: Record<string, string[]> = {
+  "Live Action Short Film": ["The Singers", "Two People Exchanging Saliva"],
+};
+
 type Ballot = {
   _id: string;
   userName: string;
@@ -29,7 +34,10 @@ function rankBallots(ballots: Ballot[], winners: Record<string, string>) {
       name: b.userName,
       submittedAt: new Date(b.submittedAt!).toISOString(),
       score: winnersKnown
-        ? Object.entries(winners).filter(([cat, win]) => b.picks[cat] === win).length
+        ? Object.entries(winners).filter(([cat, win]) => {
+            const tied = TIED_CATEGORIES[cat];
+            return tied ? tied.includes(b.picks[cat]) : b.picks[cat] === win;
+          }).length
         : null,
       totalPicked: Object.keys(b.picks).length,
     }))
